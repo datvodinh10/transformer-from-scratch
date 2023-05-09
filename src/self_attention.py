@@ -9,14 +9,18 @@ class SelfAttention(nn.Module):
         self.embed_size = embed_size
         self.heads      = heads
         self.head_dim   = embed_size // heads
-        self.values     = nn.Linear(self.head_dim,self.head_dim,bias=False)
-        self.keys       = nn.Linear(self.head_dim,self.head_dim,bias=False)
-        self.queries    = nn.Linear(self.head_dim,self.head_dim,bias=False)
+        self.values     = nn.Linear(embed_size,embed_size)
+        self.keys       = nn.Linear(embed_size,embed_size)
+        self.queries    = nn.Linear(embed_size,embed_size)
         self.fc_out     = nn.Linear(embed_size,embed_size)
 
     def forward(self,values,keys,queries,mask):
-        N = queries.shape[0]
+        N       = queries.shape[0]
         value_len, key_len, query_len = values.shape[1],keys.shape[1],queries.shape[1]
+        
+        values  = self.values(values)
+        keys  = self.keys(keys)
+        queries  = self.queries(queries)
 
         values  = values.reshape(N,value_len,self.heads,self.head_dim)
         keys    = keys.reshape(N,key_len,self.heads,self.head_dim)
@@ -30,7 +34,7 @@ class SelfAttention(nn.Module):
         if mask is not None:
             attention_weight = attention_weight.masked_fill(mask==0,float("-1e20"))
 
-        alpha = torch.softmax(attention_weight / torch.sqrt(self.embed_size),dim=3)
+        alpha = torch.softmax(attention_weight / (self.embed_size)**(1/2),dim=3)
 
         out = torch.einsum('nhqk,nkhd->nqhd',[alpha,values]).reshape(N, query_len, self.heads * self.head_dim)
         # alpha shape: (N, heads, query_len, key_len)
@@ -39,7 +43,3 @@ class SelfAttention(nn.Module):
         out = self.fc_out(out)
 
         return out
-        
-
-
-a = SelfAttention()
