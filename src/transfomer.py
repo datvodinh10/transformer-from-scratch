@@ -39,6 +39,7 @@ class Transformer(nn.Module):
         return src.to(self.device),target.to(self.device)
     
     def fit(self,data,batch_size,block_size,n_iter,print_every=50):
+        self.loss = []
         self.block_size = block_size
         for _ in range(n_iter):
             src,target = self.data_loader(data,batch_size,block_size)
@@ -51,6 +52,7 @@ class Transformer(nn.Module):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            self.loss.append(loss.detach().cpu().item())
             if _%print_every==0:
                 with torch.no_grad():
                     context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
@@ -58,6 +60,17 @@ class Transformer(nn.Module):
                     print(f'Inference: {self.decode_vocab(self.inference(context, max_token=20)[0].tolist())}')
                     print('----------------------------------')
 
+    def plot(self):
+        sns.set_style('darkgrid') # darkgrid, white grid, dark, white and ticks
+        plt.rc('axes', titlesize=18)     # fontsize of the axes title
+        plt.rc('axes', labelsize=14)    # fontsize of the x and y labels
+        plt.rc('xtick', labelsize=13)    # fontsize of the tick labels
+        plt.rc('ytick', labelsize=13)    # fontsize of the tick labels
+        plt.rc('legend', fontsize=13)    # legend fontsize
+        plt.rc('font', size=13)
+        plt.figure(figsize=(12,4),clear=True)
+        plt.plot(self.loss)
+        plt.ylabel('Loss')
 
 
 
