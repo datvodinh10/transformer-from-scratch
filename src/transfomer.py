@@ -58,15 +58,16 @@ class Transformer(nn.Module):
 
 
     def inference(self,src,max_token = 0):
-        for _ in range(max_token):
-            src_in = src[:,-self.block_size:]
-            logits = self.forward(src_in)
-            logits = logits[:,-1,:]
-            probs = F.softmax(logits, dim=-1)
-            src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
-            # append sampled index to the running sequence
-            src = torch.cat((src, src_next), dim=1) # (B, T+1)
-        return src
+        with torch.no_grad():
+            for _ in range(max_token):
+                src_in = src[:,-self.block_size:]
+                logits = self.forward(src_in)
+                logits = logits[:,-1,:]
+                probs = F.softmax(logits, dim=-1)
+                src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+                # append sampled index to the running sequence
+                src = torch.cat((src, src_next), dim=1) # (B, T+1)
+            return src
 
 
 
