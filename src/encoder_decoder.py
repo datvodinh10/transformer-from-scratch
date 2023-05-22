@@ -5,8 +5,8 @@ class EncoderBlock(nn.Module):
     def __init__(self,embed_size,heads,bias=False):
         super(EncoderBlock,self).__init__()
         self.attention    = MultiHeadAttention(embed_size,heads,bias)
-        self.layer_norm1  = nn.LayerNorm()
-        self.layer_norm2  = nn.LayerNorm()
+        self.layer_norm1  = nn.LayerNorm(embed_size)
+        self.layer_norm2  = nn.LayerNorm(embed_size)
         self.feed_forward = nn.Sequential(
             nn.Linear(embed_size,4*embed_size),
             nn.ReLU(),
@@ -23,8 +23,9 @@ class EncoderBlock(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=False):
+        super(Encoder,self).__init__()
         self.embed = nn.Embedding(vocab_size,embed_size)
-        self.position_embed = PositionalEncoding(vocab_size,max_len=max_len)
+        self.position_embed = PositionalEncoding(embed_size,max_len=max_len,dropout=dropout)
         self.encoder_layers = nn.ModuleList(
             [
                 EncoderBlock(embed_size,heads,bias)
@@ -50,7 +51,7 @@ class DecoderBlock(nn.Module):
         super(DecoderBlock,self).__init__()
         self.encoder_block = EncoderBlock(embed_size,heads,bias)
         self.attention = MultiHeadAttention(embed_size,heads,bias)
-        self.layer_norm = nn.LayerNorm()
+        self.layer_norm = nn.LayerNorm(embed_size)
         self.dropout = nn.Dropout()
 
     def forward(self,x,enc_value,enc_key,src_mask,target_mask):
@@ -63,8 +64,9 @@ class DecoderBlock(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=False):
+        super(Decoder,self).__init__()
         self.embed = nn.Embedding(vocab_size,embed_size)
-        self.position_embed = PositionalEncoding(embed_size,max_len=max_len)
+        self.position_embed = PositionalEncoding(embed_size,max_len=max_len,dropout=dropout)
         self.decoder_layer = nn.ModuleList(
             [
                 DecoderBlock(embed_size,heads,bias)

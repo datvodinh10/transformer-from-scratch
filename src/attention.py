@@ -5,11 +5,11 @@ class MultiHeadAttention(nn.Module):
         super(MultiHeadAttention,self).__init__()
         self.embed_size = embed_size
         self.heads = heads
-        self.heads_dim = embed_size / heads
-        self.keys = nn.LazyLinear(embed_size,bias=bias)
-        self.queries = nn.LazyLinear(embed_size,bias=bias)
-        self.values = nn.LazyLinear(embed_size,bias=bias)
-        self.fc = nn.LazyLinear(embed_size,bias=bias)
+        self.heads_dim = int(embed_size / heads)
+        self.keys = nn.Linear(embed_size,embed_size,bias=bias)
+        self.queries = nn.Linear(embed_size,embed_size,bias=bias)
+        self.values = nn.Linear(embed_size,embed_size,bias=bias)
+        self.fc = nn.Linear(embed_size,embed_size,bias=bias)
 
     def forward(self,key,query,value,mask=None):
 
