@@ -4,8 +4,8 @@ from src.encoder_decoder import *
 class Transformer(nn.Module):
     def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,bias=False,lr=2.5e-4):
         super(Transformer,self).__init__()
-        self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias)
-        self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias)
+        self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
+        self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
         self.apply(self._init_weights)
 
         self.optimizer = torch.optim.Adam(self.parameters(),lr=lr)
