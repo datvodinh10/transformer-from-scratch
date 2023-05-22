@@ -2,13 +2,14 @@ from src.lib import *
 from src.encoder_decoder import *
 
 class Transformer(nn.Module):
-    def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=False,lr=2.5e-4):
+    def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,bias=False,lr=2.5e-4):
         super(Transformer,self).__init__()
         self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias)
         self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias)
         self.apply(self._init_weights)
 
         self.optimizer = torch.optim.Adam(self.parameters(),lr=lr)
+        self.device = device
 
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
@@ -21,7 +22,7 @@ class Transformer(nn.Module):
     def target_mask(self,target):
         batch_size,target_len = target.shape
         target_mask = torch.tril(torch.ones((target_len,target_len))).expand(batch_size,1,target_len,target_len)
-        return target_mask
+        return target_mask.to(self.device)
     
     def forward(self,src,target):
         encoder_out = self.encoder(src,mask=None)
@@ -35,7 +36,7 @@ class Transformer(nn.Module):
         src = torch.stack([data[i:i+block_size] for i in idx])
         target = torch.stack([data[i+1:i+1+block_size] for i in idx])
 
-        return src,target
+        return src.to(self.device),target.to(self.device)
     
     def fit(self,data,batch_size,block_size,n_iter):
         for _ in range(n_iter):
@@ -48,7 +49,7 @@ class Transformer(nn.Module):
             loss.backward()
             self.optimizer.step()
             with torch.no_grad():
-                print(f'Iter: {_} Loss: {loss.item()}')
+                print(f'Iter: {_} Loss: {loss.cpu().item()}')
 
 
 
