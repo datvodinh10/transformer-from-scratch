@@ -55,9 +55,10 @@ class Transformer(nn.Module):
             self.loss.append(loss.detach().cpu().item())
             if _%print_every==0:
                 with torch.no_grad():
-                    context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
+                    context = data[:50].reshape(1,-1).to(self.device)
                     print(f'Iter: {_} Loss: {loss.cpu().item()}')
-                    print(f'Inference: {self.decode_vocab(self.inference(context, max_token=20)[0].tolist())}')
+                    self.inference(context, max_token=50)
+                    # print(f'Inference: {self.decode_vocab(self.inference(context, max_token=50)[0].tolist())}')
                     print('----------------------------------')
 
     def plot(self):
@@ -76,15 +77,19 @@ class Transformer(nn.Module):
 
     def inference(self,src,max_token = 0):
         with torch.no_grad():
+            print(self.decode_vocab(src[0].tolist()),end="")
             for _ in range(max_token):
                 src_in = src[:,-self.block_size:]
                 logits = self.forward(src_in)
                 logits = logits[:,-1,:]
                 probs = F.softmax(logits, dim=-1)
                 src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+                print(self.decode_vocab(list([src_next.item()])),end="")
+                # src_next = torch.argmax(probs, keepdim=True) # (B, 1)
                 # append sampled index to the running sequence
                 src = torch.cat((src, src_next), dim=1) # (B, T+1)
-            return src
+            print("")
+            # return src
 
 
 
