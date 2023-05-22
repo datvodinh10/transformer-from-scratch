@@ -24,12 +24,12 @@ class Transformer(nn.Module):
         target_mask = torch.tril(torch.ones((target_len,target_len))).expand(batch_size,1,target_len,target_len)
         return target_mask.to(self.device)
     
-    def forward(self,src,target):
+    def forward(self,src):
         encoder_out = self.encoder(src,mask=None)
-        out = self.decoder(src,encoder_out,src_mask=None,target_mask=self.target_mask(target))
+        out = self.decoder(src,encoder_out,src_mask=None,target_mask=self.target_mask(src))
         #out shape: (batch_size,window_size,vocab_size)
-        B,W,V = out.shape
-        return out.view(B*W,V)
+        
+        return out
 
     def data_loader(self,data,batch_size,block_size):
         idx = torch.randint(len(data) - block_size,size=(batch_size,))
@@ -39,9 +39,12 @@ class Transformer(nn.Module):
         return src.to(self.device),target.to(self.device)
     
     def fit(self,data,batch_size,block_size,n_iter):
+        self.block_size = block_size
         for _ in range(n_iter):
             src,target = self.data_loader(data,batch_size,block_size)
-            logits = self.forward(src,target)
+            logits = self.forward(src)
+            B,W,V = logits.shape
+            logits = logits.view(B*W,V)
             target = target.view(logits.shape[0])
             loss   = nn.CrossEntropyLoss()(logits,target)
 
@@ -54,7 +57,20 @@ class Transformer(nn.Module):
 
 
 
-    def inference(self):
-        pass
+    def inference(self,src,max_token = 0):
+        for _ in range(max_token):
+            src_in = src[:,-self.block_size:]
+            logits = self.forward(src_in)
+            logits = logits[:,-1,:]
+            probs = F.softmax(logits, dim=-1)
+            src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
+            # append sampled index to the running sequence
+            src = torch.cat((src, src_next), dim=1) # (B, T+1)
+        return src
+
+
+
+
+
 
 
