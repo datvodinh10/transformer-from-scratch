@@ -2,7 +2,7 @@ from src.lib import *
 from src.encoder_decoder import *
 
 class Transformer(nn.Module):
-    def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,bias=False,lr=2.5e-4):
+    def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,decode_vocab,bias=False,lr=2.5e-4):
         super(Transformer,self).__init__()
         self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
         self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
@@ -10,7 +10,7 @@ class Transformer(nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(),lr=lr)
         self.device = device
-
+        self.decode_vocab = decode_vocab
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
@@ -38,7 +38,7 @@ class Transformer(nn.Module):
 
         return src.to(self.device),target.to(self.device)
     
-    def fit(self,data,batch_size,block_size,n_iter):
+    def fit(self,data,batch_size,block_size,n_iter,print_every=50):
         self.block_size = block_size
         for _ in range(n_iter):
             src,target = self.data_loader(data,batch_size,block_size)
@@ -51,8 +51,12 @@ class Transformer(nn.Module):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
-            with torch.no_grad():
-                print(f'Iter: {_} Loss: {loss.cpu().item()}')
+            if _%print_every==0:
+                with torch.no_grad():
+                    context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
+                    print(f'Iter: {_} Loss: {loss.cpu().item()}')
+                    print(f'Inference: {self.decode_vocab(self.inference(context, max_token=20)[0].tolist())}')
+                    print('----------------------------------')
 
 
 
