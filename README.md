@@ -1,6 +1,5 @@
 # Transformer
-## `1.Reimplement transformer model and train in a toy emxample.`
-
+<a href="https://colab.research.google.com/github/datvodinh10/Transformer/blob/main/Transformer.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 ## `2.Directory`
 ```
 C:.
