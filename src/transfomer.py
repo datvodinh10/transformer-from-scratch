@@ -86,7 +86,7 @@ class TransformerModel(nn.Module):
                 src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
                 # print(self.decode_vocab(list([src_next.item()])),end=" ")
                 src = torch.cat((src, src_next), dim=1) # (B, T+1)
-            print(self.decode_vocab(src))
+            print(self.decode_vocab(src[0]))
             # return src
 
 
