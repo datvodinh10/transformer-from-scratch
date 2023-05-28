@@ -1,9 +1,9 @@
 from src.lib import *
 from src.encoder_decoder import *
 
-class Transformer(nn.Module):
+class TransformerModel(nn.Module):
     def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,decode_vocab,bias=False,lr=2.5e-4):
-        super(Transformer,self).__init__()
+        super(TransformerModel,self).__init__()
         self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
         self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
         self.apply(self._init_weights)
@@ -88,7 +88,6 @@ class Transformer(nn.Module):
                 # src_next = torch.argmax(probs, keepdim=True) # (B, 1)
                 # append sampled index to the running sequence
                 src = torch.cat((src, src_next), dim=1) # (B, T+1)
-            print("")
             # return src
 
 
