@@ -75,8 +75,14 @@ class TransformerModel(nn.Module):
         plt.ylabel('Loss')
 
 
-
-    def inference(self,src,max_token = 0,infer=False):
+    
+    def delay_print(self,text,delay_time=0.05): 
+        for character in text:      
+            sys.stdout.write(character) 
+            sys.stdout.flush()
+            time.sleep(delay_time)
+            
+    def inference(self,src,max_token = 0,delay=True):
         with torch.no_grad():
             for _ in range(max_token):
                 src_in = src[:,-self.block_size:]
@@ -86,7 +92,10 @@ class TransformerModel(nn.Module):
                 src_next = torch.multinomial(probs, num_samples=1) # (B, 1)
                 # print(self.decode_vocab(list([src_next.item()])),end=" ")
                 src = torch.cat((src, src_next), dim=1) # (B, T+1)
-            print(self.decode_vocab(src[0]))
+            if delay:
+                print(self.delay_print(self.decode_vocab(src[0]),0.01))
+            else:
+                print(self.decode_vocab(src[0]))
             # return src
 
 

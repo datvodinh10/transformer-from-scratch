@@ -9,7 +9,7 @@ class EncoderBlock(nn.Module):
         self.layer_norm2  = nn.LayerNorm(embed_size)
         self.feed_forward = nn.Sequential(
             nn.Linear(embed_size,4*embed_size),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(4*embed_size,embed_size)
         )
 
