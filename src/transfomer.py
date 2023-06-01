@@ -2,7 +2,23 @@ from src.lib import *
 from src.encoder_decoder import *
 
 class TransformerModel(nn.Module):
-    def __init__(self,vocab_size,embed_size,heads,num_layers,max_len,dropout,device,decode_vocab,bias=False,lr=2.5e-4):
+    def __init__(self,
+                 vocab_size,
+                 embed_size,
+                 heads,
+                 num_layers,
+                 max_len,
+                 dropout,
+                 device,
+                 decode_vocab,
+                 bias=False,
+                 lr=2.5e-4,
+                 batch_size=32,
+                 block_size=256,
+                 n_iter=10,
+                 print_every=50
+                 ):
+        
         super(TransformerModel,self).__init__()
         self.encoder = Encoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
         self.decoder = Decoder(vocab_size,embed_size,heads,num_layers,max_len,dropout,bias=bias).to(device)
@@ -11,6 +27,11 @@ class TransformerModel(nn.Module):
         self.optimizer = torch.optim.Adam(self.parameters(),lr=lr)
         self.device = device
         self.decode_vocab = decode_vocab
+        self.batch_size = batch_size
+        self.block_size = block_size
+        self.n_iter = n_iter
+        self.print_every = print_every
+
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
@@ -31,18 +52,18 @@ class TransformerModel(nn.Module):
         
         return out
 
-    def data_loader(self,data,batch_size,block_size):
-        idx = torch.randint(len(data) - block_size,size=(batch_size,))
-        src = torch.stack([data[i:i+block_size] for i in idx])
-        target = torch.stack([data[i+1:i+1+block_size] for i in idx])
+    def data_loader(self,data):
+        idx = torch.randint(len(data) - self.block_size,size=(self.batch_size,))
+        src = torch.stack([data[i:i+self.block_size] for i in idx])
+        target = torch.stack([data[i+1:i+1+self.block_size] for i in idx])
 
         return src.to(self.device),target.to(self.device)
     
-    def fit(self,data,batch_size,block_size,n_iter,print_every=50):
+    def fit(self,data):
         self.loss = []
-        self.block_size = block_size
-        for _ in range(n_iter):
-            src,target = self.data_loader(data,batch_size,block_size)
+        self.block_size = self.block_size
+        for _ in range(self.n_iter):
+            src,target = self.data_loader(data)
             logits = self.forward(src)
             B,W,V = logits.shape
             logits = logits.view(B*W,V)
@@ -53,12 +74,12 @@ class TransformerModel(nn.Module):
             loss.backward()
             self.optimizer.step()
             self.loss.append(loss.detach().cpu().item())
-            if _%print_every==0:
+            if _%self.print_every==0:
                 with torch.no_grad():
                     # context = data[:50].reshape(1,-1).to(self.device)
                     context = torch.zeros((1,1),dtype=torch.long,device=self.device)
                     print(f'Iter: {_} Loss: {loss.cpu().item()}')
-                    self.inference(context, max_token=20)
+                    self.inference(context, max_token=20,delay=False)
                     # print(f'Inference: {self.decode_vocab(self.inference(context, max_token=50)[0].tolist())}')
                     print('----------------------------------')
 
@@ -85,7 +106,9 @@ class TransformerModel(nn.Module):
     def inference(self,src,max_token = 0,delay=True):
         with torch.no_grad():
             for _ in range(max_token):
+
                 src_in = src[:,-self.block_size:]
+
                 logits = self.forward(src_in)
                 logits = logits[:,-1,:]
                 probs = F.softmax(logits, dim=-1)

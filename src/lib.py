@@ -7,3 +7,4 @@ import time
 import re
 import os
 import sys
+from transformers import GPT2Tokenizer
